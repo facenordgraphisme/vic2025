@@ -1,45 +1,11 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
 import { motion, AnimatePresence } from "framer-motion";
-
-const interests = [
-  "Sport", "Technologie", "Lecture", "Cuisine", "Jardinage",
-  "Art", "Musique", "Voyage", "Mode", "Jeux vidéo",
-  "Bien-être", "Bricolage", "Cinéma", "Photographie", "Nature"
-];
-
-const options = {
-  gender: [
-    { value: "homme", label: "Homme" },
-    { value: "femme", label: "Femme" },
-    { value: "neutre", label: "Non précisé" }
-  ],
-  ageRange: [
-    { value: "0-12", label: "0-12 ans" },
-    { value: "13-17", label: "13-17 ans" },
-    { value: "18-25", label: "18-25 ans" },
-    { value: "26-40", label: "26-40 ans" },
-    { value: "41-60", label: "41-60 ans" },
-    { value: "60+", label: "60+ ans" }
-  ],
-  occasion: [
-    { value: "anniversaire", label: "Anniversaire" },
-    { value: "noel", label: "Noël" },
-    { value: "mariage", label: "Mariage" },
-    { value: "naissance", label: "Naissance" },
-    { value: "autre", label: "Autre" }
-  ],
-  relationship: [
-    { value: "famille", label: "Famille" },
-    { value: "ami", label: "Ami(e)" },
-    { value: "collegue", label: "Collègue" },
-    { value: "partenaire", label: "Partenaire" },
-    { value: "autre", label: "Autre" }
-  ]
-};
+import { Range, getTrackBackground } from "react-range"; // Slider
+import { fetchSanityData } from "../sanity/lib/fetch-sanity-data";
 
 interface StepContentProps {
   step: string;
@@ -47,78 +13,123 @@ interface StepContentProps {
   onChange: (value: any) => void;
 }
 
-const priceRanges = [
-  { min: 0, max: 20, label: "Moins de 20€" },
-  { min: 20, max: 50, label: "20€ - 50€" },
-  { min: 50, max: 100, label: "50€ - 100€" },
-  { min: 100, max: 200, label: "100€ - 200€" },
-  { min: 200, max: 500, label: "200€ - 500€" },
-  { min: 500, max: 99999, label: "Plus de 500€" }
-];
+const PRICE_MIN = 0;
+const PRICE_MAX = 1000;
+const PRICE_STEP = 10;
 
 export function StepContent({ step, value, onChange }: StepContentProps) {
+  const [data, setData] = useState<{ title: string; value: string }[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const schemaMap: Record<string, string> = {
+          gender: "gender",
+          ageRange: "ageRange",
+          occasion: "occasion",
+          relation: "relation",
+          interests: "interest",
+        };
+
+        const schemaType = schemaMap[step];
+        if (schemaType) {
+          const fetchedData = await fetchSanityData(schemaType);
+          setData(fetchedData);
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+
+    fetchData();
+  }, [step]);
+
   const renderContent = () => {
     switch (step) {
       case "interests":
         return (
           <div className="w-full max-w-md">
             <div className="flex flex-wrap gap-2 justify-center">
-              {interests.map((interest) => (
+              {data.map((interest) => (
                 <Badge
-                  key={interest}
-                  variant={value.includes(interest) ? "default" : "outline"}
+                  key={interest.value}
+                  variant={value.includes(interest.value) ? "default" : "outline"}
                   className="cursor-pointer hover:bg-rose-100 hover:text-rose-700 text-sm py-2 px-4"
                   onClick={() => {
-                    const newInterests = value.includes(interest)
-                      ? value.filter((i: string) => i !== interest)
-                      : [...value, interest];
+                    const newInterests = value.includes(interest.value)
+                      ? value.filter((i: string) => i !== interest.value)
+                      : [...value, interest.value];
                     onChange(newInterests);
                   }}
                 >
-                  {interest}
+                  {interest.title}
                 </Badge>
               ))}
             </div>
           </div>
         );
 
-      case "budget":
+      case "priceRange":
         return (
-          <div className="w-full max-w-md space-y-4">
-            <div className="grid grid-cols-1 gap-3">
-              {priceRanges.map((range) => (
-                <Button
-                  key={`${range.min}-${range.max}`}
-                  variant={value.min === range.min && value.max === range.max ? "default" : "outline"}
-                  className="w-full justify-center h-12 text-lg"
-                  onClick={() => onChange(range)}
+          <div className="w-full max-w-md">
+            <h3 className="text-center text-gray-700 mb-4">Choisissez votre budget</h3>
+            <Range
+              step={PRICE_STEP}
+              min={PRICE_MIN}
+              max={PRICE_MAX}
+              values={[value.min, value.max]}
+              onChange={(range) => onChange({ min: range[0], max: range[1] })}
+              renderTrack={({ props, children }) => (
+                <div
+                  {...props}
+                  className="h-2 w-full rounded relative"
+                  style={{
+                    background: getTrackBackground({
+                      values: [value.min, value.max],
+                      colors: ["#ccc", "#f87171", "#ccc"],
+                      min: PRICE_MIN,
+                      max: PRICE_MAX,
+                    }),
+                  }}
                 >
-                  {range.label}
-                </Button>
-              ))}
+                  {children}
+                </div>
+              )}
+              renderThumb={({ props, value: thumbValue }) => {
+                const { key, ...restProps } = props; // Éviter de propager `key` directement
+                return (
+                  <div
+                    {...restProps}
+                    key={key}
+                    className="h-6 w-6 rounded-full bg-rose-500 shadow-lg flex items-center justify-center"
+                  >
+                    <span className="text-xs text-white">{thumbValue}€</span>
+                  </div>
+                );
+              }}
+            />
+            <div className="flex justify-between mt-2 text-sm text-gray-500">
+              <span>{value.min}€</span>
+              <span>{value.max}€</span>
             </div>
           </div>
         );
 
       default:
-        if (step in options) {
-          const optionsArray = options[step as keyof typeof options];
-          return (
-            <div className="w-full max-w-md grid gap-2">
-              {optionsArray.map((option) => (
-                <Button
-                  key={option.value}
-                  variant={value === option.value ? "default" : "outline"}
-                  className="w-full justify-center h-12 text-lg"
-                  onClick={() => onChange(option.value)}
-                >
-                  {option.label}
-                </Button>
-              ))}
-            </div>
-          );
-        }
-        return null;
+        return (
+          <div className="w-full max-w-md grid gap-2">
+            {data.map((item) => (
+              <Button
+                key={item.value}
+                variant={value === item.value ? "default" : "outline"}
+                className="w-full justify-center h-12 text-lg"
+                onClick={() => onChange(item.value)}
+              >
+                {item.title}
+              </Button>
+            ))}
+          </div>
+        );
     }
   };
 

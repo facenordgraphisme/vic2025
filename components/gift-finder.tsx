@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -12,12 +12,12 @@ export type GiftCriteria = {
   gender: string;
   ageRange: string;
   interests: string[];
-  budget: {
+  priceRange: {
     min: number;
     max: number;
   };
   occasion: string;
-  relationship: string;
+  relation: string;
 };
 
 const steps = [
@@ -25,43 +25,31 @@ const steps = [
   { key: "ageRange" as const, title: "Quelle est sa tranche d'âge ?" },
   { key: "interests" as const, title: "Quels sont ses centres d'intérêt ?" },
   { key: "occasion" as const, title: "Pour quelle occasion ?" },
-  { key: "relationship" as const, title: "Quelle est votre relation ?" },
-  { key: "budget" as const, title: "Quel est votre budget ?" },
+  { key: "relation" as const, title: "Quelle est votre relation ?" },
+  { key: "priceRange" as const, title: "Quel est votre budget ?" },
 ];
 
 export default function GiftFinder() {
   const [currentStep, setCurrentStep] = useState(0);
   const [showResults, setShowResults] = useState(false);
-  const resultsRef = useRef<HTMLDivElement>(null);
   const [criteria, setCriteria] = useState<GiftCriteria>({
     gender: "",
     ageRange: "",
     interests: [],
-    budget: {
-      min: 20,
-      max: 100
-    },
+    priceRange: { min: 20, max: 100 },
     occasion: "",
-    relationship: "",
+    relation: "",
   });
 
   const updateCriteria = (key: keyof GiftCriteria, value: any) => {
-    setCriteria(prev => ({ ...prev, [key]: value }));
+    setCriteria((prev) => ({ ...prev, [key]: value }));
   };
 
   const progress = ((currentStep + 1) / steps.length) * 100;
 
-  const canProceed = () => {
-    const currentKey = steps[currentStep].key;
-    const value = criteria[currentKey];
-    if (Array.isArray(value)) return value.length > 0;
-    if (typeof value === 'object' && value !== null) return true;
-    return value !== "";
-  };
-
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
-      setCurrentStep(prev => prev + 1);
+      setCurrentStep((prev) => prev + 1);
     } else {
       setShowResults(true);
     }
@@ -70,16 +58,11 @@ export default function GiftFinder() {
   const handleBack = () => {
     if (showResults) {
       setShowResults(false);
+      setCurrentStep(steps.length - 1); // Retourner au dernier step.
     } else {
-      setCurrentStep(prev => Math.max(0, prev - 1));
+      setCurrentStep((prev) => Math.max(0, prev - 1));
     }
   };
-
-  useEffect(() => {
-    if (showResults && resultsRef.current) {
-      resultsRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [showResults]);
 
   return (
     <>
@@ -129,7 +112,6 @@ export default function GiftFinder() {
 
                 <Button
                   onClick={handleNext}
-                  disabled={!canProceed()}
                   className="flex items-center gap-2 bg-rose-500 hover:bg-rose-600"
                 >
                   {currentStep === steps.length - 1 ? (
@@ -150,17 +132,15 @@ export default function GiftFinder() {
         </div>
       )}
 
-      {showResults && (
-        <div ref={resultsRef} className="w-full">
-          <GiftResults 
-            criteria={criteria} 
-            onBack={() => {
-              setShowResults(false);
-              setCurrentStep(steps.length - 1);
-            }} 
-          />
-        </div>
-      )}
+{showResults && (
+  <GiftResults
+    criteria={criteria}
+    onReturn={() => {
+      setShowResults(false);
+      setCurrentStep(steps.length - 1);
+    }}
+  />
+)}
     </>
   );
 }
