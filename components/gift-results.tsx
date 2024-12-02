@@ -17,6 +17,7 @@ interface GiftResult {
   imageUrl: string;
   categories: string[];
   affiliateLink: string;
+  slug: { current: string };
 }
 
 interface GiftResultsProps {
@@ -93,15 +94,15 @@ export function GiftResults({ criteria, onReturn }: GiftResultsProps) {
   const uniqueKey = gift.id || `fallback-key-${index}`;
   return (
     <Card key={uniqueKey} className="overflow-hidden group">
-      <Link href={`/products/${gift.id}`}>
-        <div className="aspect-square relative overflow-hidden cursor-pointer">
-          <img
-            src={gift.imageUrl}
-            alt={gift.title}
-            className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
-          />
-        </div>
-      </Link>
+      <Link href={`/products/${gift.slug.current}`}>
+  <div className="aspect-square relative overflow-hidden cursor-pointer">
+    <img
+      src={gift.imageUrl}
+      alt={gift.title}
+      className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+    />
+  </div>
+</Link>
       <div className="p-6 space-y-4">
         <div>
           <h3 className="font-semibold text-lg mb-1">{gift.title}</h3>

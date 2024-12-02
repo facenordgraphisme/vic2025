@@ -36,7 +36,8 @@ export async function fetchProducts(criteria: GiftCriteria) {
       description,
       "imageUrl": images[0].asset->url,
       "categories": interests[]->value,
-      affiliateLink
+      affiliateLink,
+      slug
     }
   `;
 
@@ -53,11 +54,10 @@ export async function fetchProducts(criteria: GiftCriteria) {
 }
 
 /**
- * Fetch a single product by ID.
+ * Fetch a single product by slug.
  */
-export async function fetchProductById(id: string) {
-  const query = `*[_type == "product" && _id == $id][0]{
-    _id,
+export async function fetchProductBySlug(slug: string) {
+  const query = `*[_type == "product" && slug.current == $slug][0]{
     title,
     description,
     price,
@@ -66,11 +66,10 @@ export async function fetchProductById(id: string) {
   }`;
 
   try {
-    const product = await sanityClient.fetch(query, { id });
-    console.log("Fetched Product by ID:", product);
+    const product = await sanityClient.fetch(query, { slug });
     return product;
   } catch (error) {
-    console.error("Error fetching product by ID:", error);
+    console.error("Error fetching product by slug:", error);
     return null;
   }
 }
